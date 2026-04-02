@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guild Request Board</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🗡️ Guild Request Board 🗡️</h1>
+            <p>Anime Guild & Assassin Request System</p>
+        </header>
+
+        <main>
+            <section class="board-section">
+                <h2>Available Requests</h2>
+                <div id="requests-list" class="requests-container">
+                    {% for request in requests %}
+                    <div class="request-card" data-request-id="{{ request.id }}">
+                        <div class="request-header">
+                            <h3>{{ request.title }}</h3>
+                            <span class="difficulty {{ request.difficulty }}">{{ request.difficulty }}</span>
+                        </div>
+                        <p class="request-description">{{ request.description }}</p>
+                        <div class="request-meta">
+                            <span class="type">{{ request.request_type }}</span>
+                            <span class="status">{{ request.status }}</span>
+                        </div>
+                        <div class="reward-info">
+                            <span class="gold">💰 {{ request.reward.gold }} Gold</span>
+                            <span class="exp">⭐ {{ request.reward.experience }} EXP</span>
+                        </div>
+                        <button class="btn-accept" onclick="acceptRequest('{{ request.id }}')">Accept Request</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="form-section">
+                <h2>Quick Actions</h2>
+                <div class="action-buttons">
+                    <button onclick="showRegisterForm()" class="btn btn-primary">Register User</button>
+                    <button onclick="showCreateGuildForm()" class="btn btn-primary">Create Guild</button>
+                    <button onclick="saveBoard()" class="btn btn-secondary">Save Board</button>
+                    <button onclick="loadBoard()" class="btn btn-secondary">Load Board</button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Guild Request Board System</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
