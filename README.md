@@ -2,6 +2,11 @@
 
 A web application for managing guild requests, tasks, and rewards in an anime-inspired setting.
 
+Netid:
+alaris	
+Name:
+Alaris Peterson	
+Repo:https://github.com/AlarisP/littleAiApplication		
 ## Project Structure
 
 ```
@@ -14,7 +19,8 @@ littleAiApplication/
 │   └── index.html            # Main HTML template
 ├── static/
 │   ├── style.css             # Stylesheet
-│   └── script.js             # Client-side JavaScript
+│   ├── script.js             # Client-side JavaScript
+│   └── medieval_inn_music.mp3 # Background music (autoplays on page load)
 └── board_state.json          # Saved board state (generated at runtime)
 ```
 
@@ -39,6 +45,7 @@ littleAiApplication/
 - **My Requests** panel: view In Progress, Completed, and Declined requests
 - View user profile (level, gold, XP) shown in the header bar
 - Save/load board state to JSON
+- Background medieval inn music (autoplays on load; floating 🔊/🔇 toggle button)
 
 ## Getting Started
 
