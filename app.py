@@ -106,6 +106,14 @@ def accept_request(request_id):
     return jsonify(api.accept_request(user_id, request_id))
 
 
+@app.route('/api/requests/<request_id>/decline', methods=['POST'])
+def decline_request(request_id):
+    """Decline a request"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    return jsonify(api.decline_request(user_id, request_id))
+
+
 @app.route('/api/requests/<request_id>/complete', methods=['POST'])
 def complete_request(request_id):
     """Complete a request"""

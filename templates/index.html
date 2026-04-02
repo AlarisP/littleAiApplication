@@ -12,31 +12,32 @@
     <div class="container">
         <header>
             <h1>🗡️ Guild Request Board 🗡️</h1>
-            <p>Anime Guild & Assassin Request System</p>
+            <p>Anime Guild &amp; Assassin Request System</p>
+            <div id="user-bar" class="user-bar"></div>
         </header>
 
         <main>
             <section class="board-section">
                 <h2>Available Requests</h2>
-                <div id="requests-list" class="requests-container">
-                    {% for request in requests %}
-                    <div class="request-card" data-request-id="{{ request.id }}">
-                        <div class="request-header">
-                            <h3>{{ request.title }}</h3>
-                            <span class="difficulty {{ request.difficulty }}">{{ request.difficulty }}</span>
-                        </div>
-                        <p class="request-description">{{ request.description }}</p>
-                        <div class="request-meta">
-                            <span class="type">{{ request.request_type }}</span>
-                            <span class="status">{{ request.status }}</span>
-                        </div>
-                        <div class="reward-info">
-                            <span class="gold">💰 {{ request.reward.gold }} Gold</span>
-                            <span class="exp">⭐ {{ request.reward.experience }} EXP</span>
-                        </div>
-                        <button class="btn-accept" onclick="acceptRequest('{{ request.id }}')">Accept Request</button>
+                <div id="requests-list" class="requests-container"></div>
+            </section>
+
+            <section id="my-requests-section" class="board-section" style="display:none;">
+                <h2>My Requests</h2>
+
+                <div class="my-requests-grid">
+                    <div class="my-requests-column">
+                        <h3 class="my-requests-heading accepted-heading">In Progress</h3>
+                        <div id="my-active-list"></div>
                     </div>
-                    {% endfor %}
+                    <div class="my-requests-column">
+                        <h3 class="my-requests-heading completed-heading">Completed</h3>
+                        <div id="my-completed-list"></div>
+                    </div>
+                    <div class="my-requests-column">
+                        <h3 class="my-requests-heading declined-heading">Declined</h3>
+                        <div id="my-declined-list"></div>
+                    </div>
                 </div>
             </section>
 
@@ -44,6 +45,7 @@
                 <h2>Quick Actions</h2>
                 <div class="action-buttons">
                     <button onclick="showRegisterForm()" class="btn btn-primary">Register User</button>
+                    <button onclick="showSetUserForm()" class="btn btn-primary">Set User</button>
                     <button onclick="showCreateGuildForm()" class="btn btn-primary">Create Guild</button>
                     <button onclick="saveBoard()" class="btn btn-secondary">Save Board</button>
                     <button onclick="loadBoard()" class="btn btn-secondary">Load Board</button>
@@ -55,6 +57,16 @@
             <p>&copy; 2025 Guild Request Board System</p>
         </footer>
     </div>
+
+    <audio id="bg-music" loop>
+        <source src="{{ url_for('static', filename='medieval_inn_music.mp3') }}" type="audio/mpeg">
+    </audio>
+
+    <div id="music-banner" class="music-banner" style="display:none;">
+        🎵 Click anywhere to start the music
+    </div>
+
+    <button id="music-toggle" class="music-toggle" title="Toggle music">🎵</button>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

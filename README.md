@@ -31,10 +31,13 @@ littleAiApplication/
 ### Web Application (Flask + HTML/CSS/JS)
 - Browse available requests
 - Filter requests by type and difficulty
-- Register new users
+- Register new users and persist session via localStorage
 - Create guilds
-- Accept and complete requests
-- View user profiles and statistics
+- Accept requests (button changes to **Finish Request** once accepted)
+- Decline requests (stays open for others; tracked per user)
+- Complete accepted requests and receive gold + XP rewards
+- **My Requests** panel: view In Progress, Completed, and Declined requests
+- View user profile (level, gold, XP) shown in the header bar
 - Save/load board state to JSON
 
 ## Getting Started
@@ -80,12 +83,13 @@ The `request_board.pyi` file defines the complete interface for the system:
   }
   ```
 - `POST /api/requests/<request_id>/accept` - Accept request
-- `POST /api/requests/<request_id>/complete` - Complete request
+- `POST /api/requests/<request_id>/decline` - Decline request (request stays open for others)
+- `POST /api/requests/<request_id>/complete` - Complete an accepted request
 
 ### Users
 - `POST /api/users/register` - Register new user
 - `GET /api/users/<user_id>/profile` - Get user profile
-- `GET /api/users/<user_id>/requests` - Get user's requests
+- `GET /api/users/<user_id>/requests` - Get user's requests (active, completed, declined)
 
 ### Guilds
 - `POST /api/guilds` - Create guild

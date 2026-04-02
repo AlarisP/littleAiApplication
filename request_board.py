@@ -183,19 +183,27 @@ class User:
         self.guild_id: Optional[str] = None
         self.joined_date: datetime = datetime.now()
         self.active_requests: List[str] = []  # Request IDs
-    
+        self.declined_requests: List[str] = []  # Request IDs the user declined
+
     def accept_request(self, request_id: str) -> bool:
         """Accept a request"""
         if request_id not in self.active_requests:
             self.active_requests.append(request_id)
             return True
         return False
-    
+
     def complete_request(self, request_id: str) -> bool:
         """Complete a request"""
         if request_id in self.active_requests:
             self.active_requests.remove(request_id)
             self.completed_requests += 1
+            return True
+        return False
+
+    def decline_request(self, request_id: str) -> bool:
+        """Decline a request"""
+        if request_id not in self.declined_requests and request_id not in self.active_requests:
+            self.declined_requests.append(request_id)
             return True
         return False
     
@@ -233,6 +241,7 @@ class User:
             "guild_id": self.guild_id,
             "joined_date": self.joined_date.isoformat(),
             "active_requests": self.active_requests,
+            "declined_requests": self.declined_requests,
         }
 
 
@@ -345,6 +354,21 @@ class RequestBoard:
                 return True
         return False
     
+    def decline_request(self, user_id: str, request_id: str) -> bool:
+        """Decline a request (stays open for others; tracked on the user)"""
+        user = self.users.get(user_id)
+        request = self.requests.get(request_id)
+        if user and request and request.status == RequestStatus.OPEN:
+            return user.decline_request(request_id)
+        return False
+
+    def get_user_declined_requests(self, user_id: str) -> List[Request]:
+        """Get all requests a user has declined"""
+        user = self.users.get(user_id)
+        if user:
+            return [self.requests[rid] for rid in user.declined_requests if rid in self.requests]
+        return []
+
     def get_user_active_requests(self, user_id: str) -> List[Request]:
         """Get all active requests for a user"""
         user = self.users.get(user_id)
@@ -403,6 +427,7 @@ class RequestBoard:
                 user.guild_id = udata.get("guild_id")
                 user.joined_date = datetime.fromisoformat(udata["joined_date"])
                 user.active_requests = udata.get("active_requests", [])
+                user.declined_requests = udata.get("declined_requests", [])
                 self.users[user.id] = user
 
             # Restore requests
@@ -501,6 +526,12 @@ class RequestBoardAPI:
             return {"success": True, "message": "Request accepted"}
         return {"success": False, "error": "Failed to accept request"}
     
+    def decline_request(self, user_id: str, request_id: str) -> Dict[str, Any]:
+        """Decline a request"""
+        if self.board.decline_request(user_id, request_id):
+            return {"success": True, "message": "Request declined"}
+        return {"success": False, "error": "Failed to decline request"}
+
     def complete_request(self, user_id: str, request_id: str) -> Dict[str, Any]:
         """Complete a request"""
         if self.board.complete_request(user_id, request_id):
@@ -538,10 +569,12 @@ class RequestBoardAPI:
         if user:
             active = self.board.get_user_active_requests(user_id)
             completed = self.board.get_user_completed_requests(user_id)
+            declined = self.board.get_user_declined_requests(user_id)
             return {
                 "success": True,
                 "active_requests": [r.to_dict() for r in active],
                 "completed_requests": [r.to_dict() for r in completed],
+                "declined_requests": [r.to_dict() for r in declined],
             }
         return {"success": False, "error": "User not found"}
     
