@@ -534,12 +534,21 @@ class RequestBoardAPI:
     
     def accept_request(self, user_id: str, request_id: str) -> Dict[str, Any]:
         """Accept a request"""
+        if not self.board.get_user(user_id):
+            return {"success": False, "error": "session_expired"}
+        req = self.board.get_request(request_id)
+        if not req:
+            return {"success": False, "error": "Request no longer exists"}
+        if req.status != RequestStatus.OPEN:
+            return {"success": False, "error": f"Request is already {req.status.value}"}
         if self.board.accept_request(user_id, request_id):
             return {"success": True, "message": "Request accepted"}
         return {"success": False, "error": "Failed to accept request"}
-    
+
     def decline_request(self, user_id: str, request_id: str) -> Dict[str, Any]:
         """Decline a request"""
+        if not self.board.get_user(user_id):
+            return {"success": False, "error": "session_expired"}
         if self.board.decline_request(user_id, request_id):
             return {"success": True, "message": "Request declined"}
         return {"success": False, "error": "Failed to decline request"}
@@ -552,13 +561,19 @@ class RequestBoardAPI:
 
     def complete_request(self, user_id: str, request_id: str) -> Dict[str, Any]:
         """Complete a request"""
+        if not self.board.get_user(user_id):
+            return {"success": False, "error": "session_expired"}
+        req = self.board.get_request(request_id)
+        if not req:
+            return {"success": False, "error": "Request no longer exists"}
+        if req.accepted_by != user_id:
+            return {"success": False, "error": "You have not accepted this request"}
         if self.board.complete_request(user_id, request_id):
-            request = self.board.get_request(request_id)
             user = self.board.get_user(user_id)
             return {
                 "success": True,
                 "message": "Request completed",
-                "reward": request.reward.to_dict() if request else None,
+                "reward": req.reward.to_dict(),
                 "user_level": user.level if user else None,
                 "user_gold": user.gold if user else None,
             }

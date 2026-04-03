@@ -287,8 +287,13 @@ async function acceptRequest(requestId) {
             await loadRequests();
             await loadMyRequests();
             updateUserBar();
+        } else if (data.error === 'session_expired') {
+            localStorage.removeItem('guildUserId');
+            await loadRequests();
+            showLoginModal(() => acceptRequest(requestId));
         } else {
-            alert('Error: ' + data.error);
+            alert(data.error);
+            await loadRequests();
         }
     } catch (error) {
         alert('Error accepting request: ' + error);
@@ -312,8 +317,13 @@ async function declineRequest(requestId) {
         if (data.success) {
             await loadRequests();
             await loadMyRequests();
+        } else if (data.error === 'session_expired') {
+            localStorage.removeItem('guildUserId');
+            await loadRequests();
+            showLoginModal(() => declineRequest(requestId));
         } else {
-            alert('Error: ' + data.error);
+            alert(data.error);
+            await loadRequests();
         }
     } catch (error) {
         alert('Error declining request: ' + error);
@@ -344,8 +354,13 @@ async function finishRequest(requestId) {
             await loadRequests();
             await loadMyRequests();
             updateUserBar();
+        } else if (data.error === 'session_expired') {
+            localStorage.removeItem('guildUserId');
+            await loadRequests();
+            showLoginModal();
         } else {
-            alert('Error: ' + data.error);
+            alert(data.error);
+            await loadRequests();
         }
     } catch (error) {
         alert('Error finishing request: ' + error);

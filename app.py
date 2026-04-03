@@ -22,18 +22,20 @@ api = RequestBoardAPI(board)
 system_guild_id: str = ""
 
 
-def setup_demo_data():
-    """Setup some demo data for testing"""
-    global system_guild_id
+def add_demo_requests():
+    """Add a fresh batch of requests to existing guilds on the board."""
+    guild_map = {g.name: g for g in board.guilds.values()}
+    hunter  = guild_map.get("Hunter's Guild")
+    assassin = guild_map.get("Shadow Syndicate")
+    mage    = guild_map.get("Arcane Circle")
+    town    = guild_map.get("Town Board")
+    # Fall back to any guild if a named one is missing
+    fallback = next(iter(board.guilds.values()), None)
+    if not fallback:
+        return
 
-    # System guild for user-posted requests
-    town_board = board.create_guild("Town Board", "Open board for all adventurers")
-    system_guild_id = town_board.id
-
-    # Named guilds
-    hunter_guild = board.create_guild("Hunter's Guild", "A prestigious guild for hunters of all kinds")
-    assassin_guild = board.create_guild("Shadow Syndicate", "Elite assassin organization")
-    mage_guild = board.create_guild("Arcane Circle", "A guild of powerful mages and scholars")
+    def g(name):
+        return guild_map.get(name) or fallback
 
     demo_requests = [
         BoardRequest(
@@ -42,7 +44,7 @@ def setup_demo_data():
             request_type=RequestType.ASSASSINATION,
             difficulty=RequestDifficulty.LEGENDARY,
             reward=Reward(gold=5000, experience=2000, description="Dragon slayer's bounty"),
-            posted_by=hunter_guild.id,
+            posted_by=g("Hunter's Guild").id,
         ),
         BoardRequest(
             title="Escort Princess Yuki to the Capital",
@@ -50,7 +52,7 @@ def setup_demo_data():
             request_type=RequestType.ESCORT,
             difficulty=RequestDifficulty.INTERMEDIATE,
             reward=Reward(gold=800, experience=300, description="Royal escort fee"),
-            posted_by=hunter_guild.id,
+            posted_by=g("Hunter's Guild").id,
         ),
         BoardRequest(
             title="Retrieve the Sacred Scroll of Flames",
@@ -58,7 +60,7 @@ def setup_demo_data():
             request_type=RequestType.RETRIEVAL,
             difficulty=RequestDifficulty.ADVANCED,
             reward=Reward(gold=1500, experience=700, description="Scroll recovery bounty"),
-            posted_by=mage_guild.id,
+            posted_by=g("Arcane Circle").id,
         ),
         BoardRequest(
             title="Gather Moonflower Herbs",
@@ -66,7 +68,7 @@ def setup_demo_data():
             request_type=RequestType.GATHERING,
             difficulty=RequestDifficulty.BEGINNER,
             reward=Reward(gold=200, experience=80, description="Herbalist payment"),
-            posted_by=mage_guild.id,
+            posted_by=g("Arcane Circle").id,
         ),
         BoardRequest(
             title="Explore the Ruins of Ashenvale",
@@ -74,7 +76,7 @@ def setup_demo_data():
             request_type=RequestType.EXPLORATION,
             difficulty=RequestDifficulty.ADVANCED,
             reward=Reward(gold=1200, experience=600, description="Explorer's commission"),
-            posted_by=hunter_guild.id,
+            posted_by=g("Hunter's Guild").id,
         ),
         BoardRequest(
             title="Defend Millbrook Village",
@@ -82,7 +84,7 @@ def setup_demo_data():
             request_type=RequestType.DEFENSE,
             difficulty=RequestDifficulty.INTERMEDIATE,
             reward=Reward(gold=600, experience=250, description="Village defense payment"),
-            posted_by=town_board.id,
+            posted_by=g("Town Board").id,
         ),
         BoardRequest(
             title="Assassinate the Corrupt Tax Collector",
@@ -90,7 +92,7 @@ def setup_demo_data():
             request_type=RequestType.ASSASSINATION,
             difficulty=RequestDifficulty.ADVANCED,
             reward=Reward(gold=2000, experience=900, description="People's justice fund"),
-            posted_by=assassin_guild.id,
+            posted_by=g("Shadow Syndicate").id,
         ),
         BoardRequest(
             title="Track the Missing Merchant",
@@ -98,7 +100,7 @@ def setup_demo_data():
             request_type=RequestType.RETRIEVAL,
             difficulty=RequestDifficulty.BEGINNER,
             reward=Reward(gold=300, experience=100, description="Family's reward"),
-            posted_by=town_board.id,
+            posted_by=g("Town Board").id,
         ),
         BoardRequest(
             title="Collect Rare Spell Components",
@@ -106,7 +108,7 @@ def setup_demo_data():
             request_type=RequestType.GATHERING,
             difficulty=RequestDifficulty.INTERMEDIATE,
             reward=Reward(gold=700, experience=350, description="Alchemist's fee"),
-            posted_by=mage_guild.id,
+            posted_by=g("Arcane Circle").id,
         ),
         BoardRequest(
             title="Scout the Demon King's Stronghold",
@@ -114,12 +116,65 @@ def setup_demo_data():
             request_type=RequestType.EXPLORATION,
             difficulty=RequestDifficulty.LEGENDARY,
             reward=Reward(gold=3000, experience=1500, description="War council payment"),
-            posted_by=assassin_guild.id,
+            posted_by=g("Shadow Syndicate").id,
+        ),
+        BoardRequest(
+            title="Purge the Undead Catacombs",
+            description="The catacombs beneath the old temple are overrun with undead. Clear every level and recover the holy relic from the deepest chamber.",
+            request_type=RequestType.ASSASSINATION,
+            difficulty=RequestDifficulty.ADVANCED,
+            reward=Reward(gold=1800, experience=800, description="Temple restoration fund"),
+            posted_by=g("Hunter's Guild").id,
+        ),
+        BoardRequest(
+            title="Rescue the Kidnapped Alchemist",
+            description="Master Hayashi was taken by the Black Crane gang. Locate their hideout, extract the alchemist alive, and dismantle the operation.",
+            request_type=RequestType.RETRIEVAL,
+            difficulty=RequestDifficulty.ADVANCED,
+            reward=Reward(gold=2200, experience=1000, description="Guild rescue bounty"),
+            posted_by=g("Shadow Syndicate").id,
+        ),
+        BoardRequest(
+            title="Deliver Medicine to the Plague Village",
+            description="Prepare and transport 50 doses of plague antidote to the quarantined village of Sora before dawn. Infection risk is high.",
+            request_type=RequestType.ESCORT,
+            difficulty=RequestDifficulty.BEGINNER,
+            reward=Reward(gold=150, experience=60, description="Healer's commission"),
+            posted_by=g("Town Board").id,
+        ),
+        BoardRequest(
+            title="Hunt the Cursed Wolf Pack",
+            description="A pack of curse-afflicted wolves has been attacking travellers on the northern pass. Put down the alpha to break the curse.",
+            request_type=RequestType.ASSASSINATION,
+            difficulty=RequestDifficulty.INTERMEDIATE,
+            reward=Reward(gold=550, experience=220, description="Ranger's bounty"),
+            posted_by=g("Hunter's Guild").id,
+        ),
+        BoardRequest(
+            title="Map the Sunken Sea Ruins",
+            description="Ancient sea-elven ruins have been spotted off the coast at low tide. Dive in, map the structure, and catalogue any magical artefacts.",
+            request_type=RequestType.EXPLORATION,
+            difficulty=RequestDifficulty.INTERMEDIATE,
+            reward=Reward(gold=900, experience=400, description="Scholar's commission"),
+            posted_by=g("Arcane Circle").id,
         ),
     ]
 
     for req in demo_requests:
         board.post_request(req.posted_by, req)
+
+
+def setup_demo_data():
+    """Create guilds and populate the initial board."""
+    global system_guild_id
+
+    town_board   = board.create_guild("Town Board",     "Open board for all adventurers")
+    system_guild_id = town_board.id
+    board.create_guild("Hunter's Guild",  "A prestigious guild for hunters of all kinds")
+    board.create_guild("Shadow Syndicate","Elite assassin organization")
+    board.create_guild("Arcane Circle",   "A guild of powerful mages and scholars")
+
+    add_demo_requests()
 
 
 # Run setup at import time so gunicorn picks it up
@@ -138,6 +193,10 @@ def index():
 @app.route('/api/requests', methods=['GET'])
 def get_requests():
     """Get all requests - can filter by type, difficulty, status"""
+    # Keep the board populated — replenish when open requests run low
+    if len(board.get_open_requests()) < 3:
+        add_demo_requests()
+
     request_type = request.args.get('type')
     difficulty = request.args.get('difficulty')
     
@@ -172,7 +231,7 @@ def get_system_guild():
 def post_request():
     """Post a new request"""
     data = request.get_json(silent=True) or {}
-    guild_id = data.get('guild_id', system_guild_id)
+    guild_id = data.get('guild_id') or system_guild_id
     result = api.post_request(guild_id, data)
     if result.get('success') and data.get('user_id'):
         req = board.get_request(result['request_id'])
