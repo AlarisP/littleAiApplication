@@ -296,7 +296,8 @@ async function acceptRequest(requestId) {
             await loadRequests();
         }
     } catch (error) {
-        alert('Error accepting request: ' + error);
+        alert('Server error — please refresh the page and try again.');
+        await loadRequests();
     }
 }
 
@@ -326,7 +327,8 @@ async function declineRequest(requestId) {
             await loadRequests();
         }
     } catch (error) {
-        alert('Error declining request: ' + error);
+        alert('Server error — please refresh the page and try again.');
+        await loadRequests();
     }
 }
 
@@ -363,7 +365,8 @@ async function finishRequest(requestId) {
             await loadRequests();
         }
     } catch (error) {
-        alert('Error finishing request: ' + error);
+        alert('Server error — please refresh the page and try again.');
+        await loadRequests();
     }
 }
 
@@ -434,7 +437,7 @@ async function loadBoard() {
 
 function showPostRequestModal() {
     if (!getCurrentUserId()) {
-        alert('You must be logged in to post a request.');
+        showLoginModal(() => showPostRequestModal());
         return;
     }
     document.getElementById('post-request-modal').style.display = 'flex';
@@ -571,10 +574,10 @@ function startBgMusic() {
 function playIntroThenBg() {
     const intro = new Audio('/static/never.mp3');
     intro.volume = 0.5;
-    intro.currentTime = 58;
+    intro.currentTime = 50;
 
     const onTimeUpdate = () => {
-        if (intro.currentTime >= 81) {
+        if (intro.currentTime >= 90) {
             intro.pause();
             intro.removeEventListener('timeupdate', onTimeUpdate);
             startBgMusic();
@@ -582,7 +585,7 @@ function playIntroThenBg() {
     };
 
     intro.addEventListener('loadedmetadata', () => {
-        intro.currentTime = 58;
+        intro.currentTime = 50;
     }, { once: true });
 
     intro.addEventListener('timeupdate', onTimeUpdate);
@@ -640,7 +643,7 @@ function initMusic() {
         }
     });
 
-    // Play Never.mp3 intro (0:58–1:21) on first visit this session
+    // Play Never.mp3 intro (0:50–1:30) on first visit this session
     if (!sessionStorage.getItem('introPlayed')) {
         sessionStorage.setItem('introPlayed', '1');
         playIntroThenBg();

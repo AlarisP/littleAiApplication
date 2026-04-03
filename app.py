@@ -193,26 +193,32 @@ def index():
 @app.route('/api/requests', methods=['GET'])
 def get_requests():
     """Get all requests - can filter by type, difficulty, status"""
-    # Keep the board populated — replenish when open requests run low
-    if len(board.get_open_requests()) < 3:
-        add_demo_requests()
+    try:
+        # Keep the board populated — replenish when open requests run low
+        if len(board.get_open_requests()) < 3:
+            add_demo_requests()
+    except Exception as e:
+        print(f"Error replenishing requests: {e}")
 
-    request_type = request.args.get('type')
-    difficulty = request.args.get('difficulty')
-    
-    requests_list = board.get_all_requests()
-    
-    if request_type:
-        requests_list = [r for r in requests_list if r.request_type.value == request_type]
-    
-    if difficulty:
-        requests_list = [r for r in requests_list if r.difficulty.value == difficulty]
-    
-    return jsonify({
-        "success": True,
-        "requests": [r.to_dict() for r in requests_list],
-        "count": len(requests_list),
-    })
+    try:
+        request_type = request.args.get('type')
+        difficulty = request.args.get('difficulty')
+
+        requests_list = board.get_all_requests()
+
+        if request_type:
+            requests_list = [r for r in requests_list if r.request_type.value == request_type]
+
+        if difficulty:
+            requests_list = [r for r in requests_list if r.difficulty.value == difficulty]
+
+        return jsonify({
+            "success": True,
+            "requests": [r.to_dict() for r in requests_list],
+            "count": len(requests_list),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/requests/<request_id>', methods=['GET'])
@@ -251,52 +257,67 @@ def delete_request(request_id):
 @app.route('/api/requests/<request_id>/accept', methods=['POST'])
 def accept_request(request_id):
     """Accept a request"""
-    data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id')
-    if not user_id:
-        return jsonify({"success": False, "error": "Not logged in"})
-    return jsonify(api.accept_request(user_id, request_id))
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get('user_id')
+        if not user_id:
+            return jsonify({"success": False, "error": "Not logged in"})
+        return jsonify(api.accept_request(user_id, request_id))
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/requests/<request_id>/decline', methods=['POST'])
 def decline_request(request_id):
     """Decline a request"""
-    data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id')
-    if not user_id:
-        return jsonify({"success": False, "error": "Not logged in"})
-    return jsonify(api.decline_request(user_id, request_id))
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get('user_id')
+        if not user_id:
+            return jsonify({"success": False, "error": "Not logged in"})
+        return jsonify(api.decline_request(user_id, request_id))
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/requests/<request_id>/complete', methods=['POST'])
 def complete_request(request_id):
     """Complete a request"""
-    data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id')
-    if not user_id:
-        return jsonify({"success": False, "error": "Not logged in"})
-    return jsonify(api.complete_request(user_id, request_id))
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get('user_id')
+        if not user_id:
+            return jsonify({"success": False, "error": "Not logged in"})
+        return jsonify(api.complete_request(user_id, request_id))
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/users/login', methods=['POST'])
 def login_user():
     """Log in by username"""
-    data = request.get_json(silent=True) or {}
-    username = (data.get('username') or '').strip()
-    user = board.get_user_by_username(username)
-    if user:
-        return jsonify({"success": True, "user_id": user.id, "username": user.username})
-    return jsonify({"success": False, "error": "User not found"})
+    try:
+        data = request.get_json(silent=True) or {}
+        username = (data.get('username') or '').strip()
+        user = board.get_user_by_username(username)
+        if user:
+            return jsonify({"success": True, "user_id": user.id, "username": user.username})
+        return jsonify({"success": False, "error": "User not found"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/users/register', methods=['POST'])
 def register_user():
     """Register a new user"""
-    data = request.get_json(silent=True) or {}
-    username = (data.get('username') or '').strip()
-    if not username:
-        return jsonify({"success": False, "error": "Username is required"})
-    return jsonify(api.register_user(username))
+    try:
+        data = request.get_json(silent=True) or {}
+        username = (data.get('username') or '').strip()
+        if not username:
+            return jsonify({"success": False, "error": "Username is required"})
+        return jsonify(api.register_user(username))
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/users/<user_id>/profile', methods=['GET'])
