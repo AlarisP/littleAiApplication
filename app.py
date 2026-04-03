@@ -21,7 +21,7 @@ api = RequestBoardAPI(board)
 # ID of the system "Town Board" guild — set during setup_demo_data()
 system_guild_id: str = ""
 
-# Demo data setup
+
 def setup_demo_data():
     """Setup some demo data for testing"""
     global system_guild_id
@@ -122,6 +122,10 @@ def setup_demo_data():
         board.post_request(req.posted_by, req)
 
 
+# Run setup at import time so gunicorn picks it up
+setup_demo_data()
+
+
 # Routes
 
 @app.route('/')
@@ -209,6 +213,17 @@ def complete_request(request_id):
     return jsonify(api.complete_request(user_id, request_id))
 
 
+@app.route('/api/users/login', methods=['POST'])
+def login_user():
+    """Log in by username"""
+    data = request.get_json()
+    username = (data.get('username') or '').strip()
+    user = board.get_user_by_username(username)
+    if user:
+        return jsonify({"success": True, "user_id": user.id, "username": user.username})
+    return jsonify({"success": False, "error": "User not found"})
+
+
 @app.route('/api/users/register', methods=['POST'])
 def register_user():
     """Register a new user"""
@@ -281,6 +296,5 @@ def server_error(e):
 
 
 if __name__ == '__main__':
-    setup_demo_data()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)

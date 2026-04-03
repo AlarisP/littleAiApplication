@@ -223,6 +223,18 @@ main {
     flex: none;
 }
 
+.taken-label {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    background: #fef3cd;
+    color: #856404;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
 .declined-label {
     display: block;
     width: 100%;
@@ -394,9 +406,44 @@ footer {
     transform: scale(1.1);
 }
 
+.music-selector {
+    position: fixed;
+    bottom: 82px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 100;
+}
+
+.music-option {
+    padding: 6px 14px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    background: rgba(44, 62, 80, 0.85);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.75em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.music-option:hover {
+    background: rgba(44, 62, 80, 1);
+    color: white;
+}
+
+.music-option.active {
+    background: rgba(52, 152, 219, 0.9);
+    border-color: rgba(52, 152, 219, 0.9);
+    color: white;
+}
+
 .music-banner {
     position: fixed;
-    bottom: 80px;
+    bottom: 200px;
     right: 24px;
     background: rgba(44, 62, 80, 0.9);
     color: white;
@@ -470,6 +517,13 @@ footer {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-subtitle {
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 18px;
+    margin-top: -10px;
 }
 
 .modal h2 {

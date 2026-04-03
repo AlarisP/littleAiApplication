@@ -38,24 +38,61 @@ function updateUserBar() {
                 if (data.success) {
                     const u = data.user;
                     bar.innerHTML = `
-                        <span>Logged in as <strong>${u.username}</strong> &nbsp;|&nbsp;
+                        <span>Welcome, <strong>${u.username}</strong> &nbsp;|&nbsp;
                         Lv.${u.level} &nbsp;|&nbsp; 💰 ${u.gold} Gold &nbsp;|&nbsp; ⭐ ${u.experience} XP</span>
                         <button onclick="clearCurrentUser()" class="btn-logout">Log Out</button>
                     `;
                 } else {
                     localStorage.removeItem('guildUserId');
-                    bar.innerHTML = '<button onclick="showSetUserForm()" class="btn btn-primary">Set User</button>';
+                    bar.innerHTML = '<button onclick="showLoginModal()" class="btn btn-primary">Join / Log In</button>';
                 }
             });
     } else {
-        bar.innerHTML = '<button onclick="showSetUserForm()" class="btn btn-primary">Set User</button>';
+        bar.innerHTML = '<button onclick="showLoginModal()" class="btn btn-primary">Join / Log In</button>';
     }
 }
 
-function showSetUserForm() {
-    const userId = prompt('Enter your User ID (or register first using Quick Actions):');
-    if (userId && userId.trim()) {
-        setCurrentUserId(userId.trim());
+// --- Login / Register modal ---
+
+function showLoginModal() {
+    document.getElementById('login-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('login-username').focus(), 50);
+}
+
+function closeLoginModal() {
+    document.getElementById('login-modal').style.display = 'none';
+    document.getElementById('login-username').value = '';
+}
+
+async function submitLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    if (!username) return;
+
+    try {
+        // Try login first
+        let data = await fetch('/api/users/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username }),
+        }).then(r => r.json());
+
+        if (!data.success) {
+            // Not found — register as new adventurer
+            data = await fetch('/api/users/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username }),
+            }).then(r => r.json());
+        }
+
+        if (data.success) {
+            closeLoginModal();
+            setCurrentUserId(data.user_id);
+        } else {
+            alert('Could not join: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error);
     }
 }
 
@@ -93,10 +130,12 @@ async function loadRequests() {
             const isOwner = userId && request.posted_by_user === userId;
 
             let actionHTML = '';
-            if (!userId) {
-                actionHTML = `<button class="btn-accept" data-id="${request.id}">Accept Request</button>`;
-            } else if (isActive) {
+            if (isActive) {
                 actionHTML = `<button class="btn-finish" data-id="${request.id}">Finish Request</button>`;
+            } else if (request.status === 'in_progress') {
+                actionHTML = `<span class="taken-label">⚔️ In Progress</span>`;
+            } else if (!userId) {
+                actionHTML = `<button class="btn-accept" data-id="${request.id}">Accept Request</button>`;
             } else if (isDeclined) {
                 actionHTML = `<span class="declined-label">Declined</span>`;
             } else if (isOwner) {
@@ -220,10 +259,10 @@ function renderMyList(containerId, requests, type) {
 // --- Actions ---
 
 async function acceptRequest(requestId) {
-    let userId = getCurrentUserId();
+    const userId = getCurrentUserId();
     if (!userId) {
-        userId = prompt('Enter your User ID:');
-        if (!userId) return;
+        showLoginModal();
+        return;
     }
 
     try {
@@ -246,10 +285,10 @@ async function acceptRequest(requestId) {
 }
 
 async function declineRequest(requestId) {
-    let userId = getCurrentUserId();
+    const userId = getCurrentUserId();
     if (!userId) {
-        userId = prompt('Enter your User ID:');
-        if (!userId) return;
+        showLoginModal();
+        return;
     }
 
     try {
@@ -271,10 +310,10 @@ async function declineRequest(requestId) {
 }
 
 async function finishRequest(requestId) {
-    let userId = getCurrentUserId();
+    const userId = getCurrentUserId();
     if (!userId) {
-        userId = prompt('Enter your User ID:');
-        if (!userId) return;
+        showLoginModal();
+        return;
     }
 
     try {
@@ -286,6 +325,11 @@ async function finishRequest(requestId) {
 
         if (data.success) {
             alert(`Request completed! +${data.reward.gold} Gold, +${data.reward.experience} EXP`);
+
+            const total = (parseInt(localStorage.getItem('guildTotalCompleted') || '0')) + 1;
+            localStorage.setItem('guildTotalCompleted', total);
+            if (total % 10 === 0) playWellArmedPeasants();
+
             await loadRequests();
             await loadMyRequests();
             updateUserBar();
@@ -297,37 +341,12 @@ async function finishRequest(requestId) {
     }
 }
 
-// --- User / Guild management ---
-
-function showRegisterForm() {
-    const username = prompt('Enter username:');
-    if (!username) return;
-    registerUser(username);
-}
-
-async function registerUser(username) {
-    try {
-        const data = await fetch('/api/users/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username }),
-        }).then(r => r.json());
-
-        if (data.success) {
-            alert(`Registered! User ID: ${data.user_id}\n\nYou are now logged in as ${username}.`);
-            setCurrentUserId(data.user_id);
-        } else {
-            alert('Error: ' + data.error);
-        }
-    } catch (error) {
-        alert('Error registering user: ' + error);
-    }
-}
+// --- Guild management ---
 
 function showCreateGuildForm() {
     const name = prompt('Enter guild name:');
     if (!name) return;
-    const description = prompt('Enter guild description:');
+    const description = prompt('Enter guild description (optional):') || '';
     createGuild(name, description);
 }
 
@@ -340,7 +359,7 @@ async function createGuild(name, description) {
         }).then(r => r.json());
 
         if (data.success) {
-            alert(`Guild created! Guild ID: ${data.guild_id}`);
+            alert(`Guild "${name}" created!`);
         } else {
             alert('Error: ' + data.error);
         }
@@ -467,21 +486,51 @@ async function deleteRequest(requestId) {
 
 // --- Background music ---
 
-function initMusic() {
-    const music = document.getElementById('bg-music');
+let chosenTrack = 'medieval'; // 'medieval' or 'one_hour'
+let jinglePlaying = false;
+
+function getTrackUrl(track) {
+    return track === 'one_hour'
+        ? '/static/one_hour_medieval.mp3'
+        : '/static/medieval_inn_music.mp3';
+}
+
+function updateMusicSelectorUI() {
+    document.querySelectorAll('.music-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.track === chosenTrack);
+    });
+}
+
+function switchTrack(track) {
+    chosenTrack = track;
+    localStorage.setItem('guildMusicChoice', track);
+    updateMusicSelectorUI();
+
+    if (jinglePlaying) return; // will resume correct track after jingle ends
+
+    const bgMusic = document.getElementById('bg-music');
+    const wasPlaying = !bgMusic.paused;
+    bgMusic.src = getTrackUrl(track);
+    bgMusic.loop = true;
+    if (wasPlaying) bgMusic.play();
+}
+
+function startBgMusic() {
+    const bgMusic = document.getElementById('bg-music');
     const toggle = document.getElementById('music-toggle');
     const banner = document.getElementById('music-banner');
 
-    music.volume = 0.4;
+    bgMusic.src = getTrackUrl(chosenTrack);
+    bgMusic.loop = true;
+    bgMusic.volume = 0.4;
 
-    // Try autoplay immediately
-    music.play().then(() => {
+    bgMusic.play().then(() => {
         toggle.textContent = '🔊';
+        banner.style.display = 'none';
     }).catch(() => {
-        // Autoplay blocked — show banner and wait for first interaction
         banner.style.display = 'block';
         const startOnInteraction = () => {
-            music.play().then(() => {
+            bgMusic.play().then(() => {
                 toggle.textContent = '🔊';
                 banner.style.display = 'none';
             });
@@ -491,17 +540,87 @@ function initMusic() {
         document.addEventListener('click', startOnInteraction);
         document.addEventListener('keydown', startOnInteraction);
     });
+}
+
+function playIntroThenBg() {
+    const intro = new Audio('/static/never.mp3');
+    intro.volume = 0.5;
+    intro.currentTime = 58;
+
+    const onTimeUpdate = () => {
+        if (intro.currentTime >= 81) {
+            intro.pause();
+            intro.removeEventListener('timeupdate', onTimeUpdate);
+            startBgMusic();
+        }
+    };
+
+    intro.addEventListener('loadedmetadata', () => {
+        intro.currentTime = 58;
+    }, { once: true });
+
+    intro.addEventListener('timeupdate', onTimeUpdate);
+    intro.addEventListener('ended', startBgMusic, { once: true });
+
+    intro.play().catch(() => {
+        // Autoplay blocked — skip intro and go straight to bg music
+        intro.removeEventListener('timeupdate', onTimeUpdate);
+        startBgMusic();
+    });
+}
+
+function playWellArmedPeasants() {
+    const bgMusic = document.getElementById('bg-music');
+    const toggle = document.getElementById('music-toggle');
+    const wasPaused = bgMusic.paused;
+
+    jinglePlaying = true;
+    bgMusic.pause();
+
+    const jingle = new Audio('/static/well_armed_peasants.mp3');
+    jingle.volume = 0.7;
+
+    jingle.addEventListener('ended', () => {
+        jinglePlaying = false;
+        bgMusic.src = getTrackUrl(chosenTrack);
+        bgMusic.loop = true;
+        if (!wasPaused) {
+            bgMusic.play().then(() => { toggle.textContent = '🔊'; });
+        }
+    }, { once: true });
+
+    jingle.play().catch(() => {
+        jinglePlaying = false;
+    });
+}
+
+function initMusic() {
+    const bgMusic = document.getElementById('bg-music');
+    const toggle = document.getElementById('music-toggle');
+
+    chosenTrack = localStorage.getItem('guildMusicChoice') || 'medieval';
+    updateMusicSelectorUI();
+
+    bgMusic.volume = 0.4;
 
     toggle.addEventListener('click', (e) => {
-        e.stopPropagation(); // don't trigger the interaction listener
-        if (music.paused) {
-            music.play();
+        e.stopPropagation();
+        if (bgMusic.paused) {
+            bgMusic.play();
             toggle.textContent = '🔊';
         } else {
-            music.pause();
+            bgMusic.pause();
             toggle.textContent = '🔇';
         }
     });
+
+    // Play Never.mp3 intro (0:58–1:21) on first visit this session
+    if (!sessionStorage.getItem('introPlayed')) {
+        sessionStorage.setItem('introPlayed', '1');
+        playIntroThenBg();
+    } else {
+        startBgMusic();
+    }
 }
 
 // --- Init ---

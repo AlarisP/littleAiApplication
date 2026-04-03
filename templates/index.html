@@ -44,8 +44,7 @@
             <section class="form-section">
                 <h2>Quick Actions</h2>
                 <div class="action-buttons">
-                    <button onclick="showRegisterForm()" class="btn btn-primary">Register User</button>
-                    <button onclick="showSetUserForm()" class="btn btn-primary">Set User</button>
+                    <button onclick="showLoginModal()" class="btn btn-primary">Join / Log In</button>
                     <button onclick="showPostRequestModal()" class="btn btn-post">Post Request</button>
                     <button onclick="showCreateGuildForm()" class="btn btn-primary">Create Guild</button>
                     <button onclick="saveBoard()" class="btn btn-secondary">Save Board</button>
@@ -57,6 +56,23 @@
         <footer>
             <p>&copy; 2025 Guild Request Board System</p>
         </footer>
+    </div>
+
+    <!-- Login / Register Modal -->
+    <div id="login-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeLoginModal()">
+        <div class="modal">
+            <h2>⚔️ Enter the Guild</h2>
+            <p class="modal-subtitle">Enter your username to log in. New here? We'll sign you up automatically.</p>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login-username" placeholder="Your adventurer name" maxlength="50"
+                    onkeydown="if(event.key==='Enter')submitLogin()">
+            </div>
+            <div class="modal-actions">
+                <button onclick="submitLogin()" class="btn btn-primary">Enter Guild</button>
+                <button onclick="closeLoginModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- Post Request Modal -->
@@ -117,6 +133,11 @@
 
     <div id="music-banner" class="music-banner" style="display:none;">
         🎵 Click anywhere to start the music
+    </div>
+
+    <div class="music-selector">
+        <button class="music-option" data-track="medieval" onclick="switchTrack('medieval')">Medieval Inn</button>
+        <button class="music-option" data-track="one_hour" onclick="switchTrack('one_hour')">One Hour Medieval</button>
     </div>
 
     <button id="music-toggle" class="music-toggle" title="Toggle music">🎵</button>
