@@ -70,6 +70,7 @@ class Request:
         reward: Reward,
         posted_by: str,
         deadline: Optional[datetime] = None,
+        posted_by_user: Optional[str] = None,
     ) -> None:
         self.id: str = str(uuid.uuid4())
         self.title: str = title
@@ -79,6 +80,7 @@ class Request:
         self.status: RequestStatus = RequestStatus.OPEN
         self.reward: Reward = reward
         self.posted_by: str = posted_by
+        self.posted_by_user: Optional[str] = posted_by_user
         self.posted_date: datetime = datetime.now()
         self.deadline: Optional[datetime] = deadline
         self.accepted_by: Optional[str] = None
@@ -117,6 +119,7 @@ class Request:
             "status": self.status.value,
             "reward": self.reward.to_dict(),
             "posted_by": self.posted_by,
+            "posted_by_user": self.posted_by_user,
             "posted_date": self.posted_date.isoformat(),
             "deadline": self.deadline.isoformat() if self.deadline else None,
             "accepted_by": self.accepted_by,
@@ -354,6 +357,14 @@ class RequestBoard:
                 return True
         return False
     
+    def delete_request(self, request_id: str, user_id: str) -> bool:
+        """Delete a request posted by the given user (only if still open)"""
+        request = self.requests.get(request_id)
+        if request and request.posted_by_user == user_id and request.status == RequestStatus.OPEN:
+            del self.requests[request_id]
+            return True
+        return False
+
     def decline_request(self, user_id: str, request_id: str) -> bool:
         """Decline a request (stays open for others; tracked on the user)"""
         user = self.users.get(user_id)
@@ -452,6 +463,7 @@ class RequestBoard:
                 )
                 req.id = rdata["id"]
                 req.status = RequestStatus(rdata["status"])
+                req.posted_by_user = rdata.get("posted_by_user")
                 req.posted_date = datetime.fromisoformat(rdata["posted_date"])
                 req.accepted_by = rdata.get("accepted_by")
                 req.completion_date = (
@@ -531,6 +543,12 @@ class RequestBoardAPI:
         if self.board.decline_request(user_id, request_id):
             return {"success": True, "message": "Request declined"}
         return {"success": False, "error": "Failed to decline request"}
+
+    def delete_request(self, request_id: str, user_id: str) -> Dict[str, Any]:
+        """Delete a request (only by the user who posted it, only if open)"""
+        if self.board.delete_request(request_id, user_id):
+            return {"success": True, "message": "Request deleted"}
+        return {"success": False, "error": "Cannot delete: request not found, not yours, or already in progress"}
 
     def complete_request(self, user_id: str, request_id: str) -> Dict[str, Any]:
         """Complete a request"""

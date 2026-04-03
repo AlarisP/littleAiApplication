@@ -18,40 +18,108 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-producti
 board = RequestBoard()
 api = RequestBoardAPI(board)
 
+# ID of the system "Town Board" guild — set during setup_demo_data()
+system_guild_id: str = ""
+
 # Demo data setup
 def setup_demo_data():
     """Setup some demo data for testing"""
-    # Create guilds
+    global system_guild_id
+
+    # System guild for user-posted requests
+    town_board = board.create_guild("Town Board", "Open board for all adventurers")
+    system_guild_id = town_board.id
+
+    # Named guilds
     hunter_guild = board.create_guild("Hunter's Guild", "A prestigious guild for hunters of all kinds")
     assassin_guild = board.create_guild("Shadow Syndicate", "Elite assassin organization")
-    
-    # Create users
-    user1 = board.register_user("Tanjiro")
-    user2 = board.register_user("Naruto")
-    user3 = board.register_user("Ichigo")
-    
-    # Create some requests
-    reward1 = Reward(gold=1000, experience=500, description="Reward for defeating the demon")
-    request1 = BoardRequest(
-        title="Defeat the Mountain Demon",
-        description="A powerful demon has been terrorizing the mountain village. Eliminate it.",
-        request_type=RequestType.ASSASSINATION,
-        difficulty=RequestDifficulty.ADVANCED,
-        reward=reward1,
-        posted_by=hunter_guild.id,
-    )
-    board.post_request(hunter_guild.id, request1)
-    
-    reward2 = Reward(gold=500, experience=200, description="Reward for escort mission")
-    request2 = BoardRequest(
-        title="Escort the Merchant",
-        description="A merchant needs protection traveling through dangerous territory.",
-        request_type=RequestType.ESCORT,
-        difficulty=RequestDifficulty.INTERMEDIATE,
-        reward=reward2,
-        posted_by=hunter_guild.id,
-    )
-    board.post_request(hunter_guild.id, request2)
+    mage_guild = board.create_guild("Arcane Circle", "A guild of powerful mages and scholars")
+
+    demo_requests = [
+        BoardRequest(
+            title="Slay the Dragon of Mount Fuji",
+            description="A legendary fire dragon has taken residence on Mount Fuji. Several villages are at risk. Bring back a scale as proof.",
+            request_type=RequestType.ASSASSINATION,
+            difficulty=RequestDifficulty.LEGENDARY,
+            reward=Reward(gold=5000, experience=2000, description="Dragon slayer's bounty"),
+            posted_by=hunter_guild.id,
+        ),
+        BoardRequest(
+            title="Escort Princess Yuki to the Capital",
+            description="The princess must reach the capital safely before the new moon. Bandits have been spotted along the Eastern Road.",
+            request_type=RequestType.ESCORT,
+            difficulty=RequestDifficulty.INTERMEDIATE,
+            reward=Reward(gold=800, experience=300, description="Royal escort fee"),
+            posted_by=hunter_guild.id,
+        ),
+        BoardRequest(
+            title="Retrieve the Sacred Scroll of Flames",
+            description="A powerful scroll was stolen from the Arcane Circle library. It was last seen in the possession of a rogue mage near the Darkwood.",
+            request_type=RequestType.RETRIEVAL,
+            difficulty=RequestDifficulty.ADVANCED,
+            reward=Reward(gold=1500, experience=700, description="Scroll recovery bounty"),
+            posted_by=mage_guild.id,
+        ),
+        BoardRequest(
+            title="Gather Moonflower Herbs",
+            description="We need 20 bundles of Moonflower herbs from the meadows north of town. They only bloom at night — bring gloves.",
+            request_type=RequestType.GATHERING,
+            difficulty=RequestDifficulty.BEGINNER,
+            reward=Reward(gold=200, experience=80, description="Herbalist payment"),
+            posted_by=mage_guild.id,
+        ),
+        BoardRequest(
+            title="Explore the Ruins of Ashenvale",
+            description="Ancient ruins have resurfaced near the Ashenvale forest. Map the interior and report any dangers or treasures found.",
+            request_type=RequestType.EXPLORATION,
+            difficulty=RequestDifficulty.ADVANCED,
+            reward=Reward(gold=1200, experience=600, description="Explorer's commission"),
+            posted_by=hunter_guild.id,
+        ),
+        BoardRequest(
+            title="Defend Millbrook Village",
+            description="A bandit warlord has threatened to raid Millbrook at dawn. The village has no guards — they need able-bodied defenders tonight.",
+            request_type=RequestType.DEFENSE,
+            difficulty=RequestDifficulty.INTERMEDIATE,
+            reward=Reward(gold=600, experience=250, description="Village defense payment"),
+            posted_by=town_board.id,
+        ),
+        BoardRequest(
+            title="Assassinate the Corrupt Tax Collector",
+            description="Lord Vren has been extorting the poor for years. The people have pooled their savings for this contract. Discreet execution required.",
+            request_type=RequestType.ASSASSINATION,
+            difficulty=RequestDifficulty.ADVANCED,
+            reward=Reward(gold=2000, experience=900, description="People's justice fund"),
+            posted_by=assassin_guild.id,
+        ),
+        BoardRequest(
+            title="Track the Missing Merchant",
+            description="Merchant Gorou went missing three days ago on the southern trade road. Find him — dead or alive — and retrieve his cargo.",
+            request_type=RequestType.RETRIEVAL,
+            difficulty=RequestDifficulty.BEGINNER,
+            reward=Reward(gold=300, experience=100, description="Family's reward"),
+            posted_by=town_board.id,
+        ),
+        BoardRequest(
+            title="Collect Rare Spell Components",
+            description="The Circle needs 5 phoenix feathers, 3 vials of basilisk venom, and a handful of starstone dust. Sources are scattered across the region.",
+            request_type=RequestType.GATHERING,
+            difficulty=RequestDifficulty.INTERMEDIATE,
+            reward=Reward(gold=700, experience=350, description="Alchemist's fee"),
+            posted_by=mage_guild.id,
+        ),
+        BoardRequest(
+            title="Scout the Demon King's Stronghold",
+            description="A full assault is being planned. We need detailed intelligence on the stronghold's layout, guard rotations, and weak points. Do NOT engage.",
+            request_type=RequestType.EXPLORATION,
+            difficulty=RequestDifficulty.LEGENDARY,
+            reward=Reward(gold=3000, experience=1500, description="War council payment"),
+            posted_by=assassin_guild.id,
+        ),
+    ]
+
+    for req in demo_requests:
+        board.post_request(req.posted_by, req)
 
 
 # Routes
@@ -90,12 +158,31 @@ def get_request(request_id):
     return jsonify(api.get_request_by_id(request_id))
 
 
+@app.route('/api/system-guild', methods=['GET'])
+def get_system_guild():
+    """Return the system guild ID for user-posted requests"""
+    return jsonify({"success": True, "guild_id": system_guild_id})
+
+
 @app.route('/api/requests', methods=['POST'])
 def post_request():
     """Post a new request"""
     data = request.get_json()
-    guild_id = data.get('guild_id')
-    return jsonify(api.post_request(guild_id, data))
+    guild_id = data.get('guild_id', system_guild_id)
+    result = api.post_request(guild_id, data)
+    if result.get('success') and data.get('user_id'):
+        req = board.get_request(result['request_id'])
+        if req:
+            req.posted_by_user = data['user_id']
+    return jsonify(result)
+
+
+@app.route('/api/requests/<request_id>', methods=['DELETE'])
+def delete_request(request_id):
+    """Delete a request (only by the user who posted it)"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    return jsonify(api.delete_request(request_id, user_id))
 
 
 @app.route('/api/requests/<request_id>/accept', methods=['POST'])

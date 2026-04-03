@@ -1,5 +1,13 @@
 // Guild Request Board JavaScript
 
+// --- System guild (set on load) ---
+let systemGuildId = null;
+
+async function loadSystemGuild() {
+    const data = await fetch('/api/system-guild').then(r => r.json());
+    if (data.success) systemGuildId = data.guild_id;
+}
+
 // --- Current user session (persisted in localStorage) ---
 
 function getCurrentUserId() {
@@ -82,6 +90,8 @@ async function loadRequests() {
             const isActive = activeIds.has(request.id);
             const isDeclined = declinedIds.has(request.id);
 
+            const isOwner = userId && request.posted_by_user === userId;
+
             let actionHTML = '';
             if (!userId) {
                 actionHTML = `<button class="btn-accept" data-id="${request.id}">Accept Request</button>`;
@@ -89,6 +99,8 @@ async function loadRequests() {
                 actionHTML = `<button class="btn-finish" data-id="${request.id}">Finish Request</button>`;
             } else if (isDeclined) {
                 actionHTML = `<span class="declined-label">Declined</span>`;
+            } else if (isOwner) {
+                actionHTML = `<button class="btn-delete" data-id="${request.id}">Delete Request</button>`;
             } else {
                 actionHTML = `
                     <div class="card-actions">
@@ -130,6 +142,10 @@ async function loadRequests() {
             const finishBtn = card.querySelector('.btn-finish');
             if (finishBtn) {
                 finishBtn.addEventListener('click', () => finishRequest(finishBtn.dataset.id));
+            }
+            const deleteBtn = card.querySelector('.btn-delete');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => deleteRequest(deleteBtn.dataset.id));
             }
 
             container.appendChild(card);
@@ -369,6 +385,86 @@ async function loadBoard() {
     }
 }
 
+// --- Post / Delete requests ---
+
+function showPostRequestModal() {
+    if (!getCurrentUserId()) {
+        alert('You must be logged in to post a request.');
+        return;
+    }
+    document.getElementById('post-request-modal').style.display = 'flex';
+}
+
+function closePostRequestModal() {
+    document.getElementById('post-request-modal').style.display = 'none';
+}
+
+async function submitPostRequest() {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    const title = document.getElementById('pr-title').value.trim();
+    const description = document.getElementById('pr-description').value.trim();
+    const type = document.getElementById('pr-type').value;
+    const difficulty = document.getElementById('pr-difficulty').value;
+    const gold = parseInt(document.getElementById('pr-gold').value) || 0;
+    const exp = parseInt(document.getElementById('pr-exp').value) || 0;
+
+    if (!title || !description) {
+        alert('Please fill in the title and description.');
+        return;
+    }
+
+    try {
+        const data = await fetch('/api/requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                guild_id: systemGuildId,
+                user_id: userId,
+                title,
+                description,
+                type,
+                difficulty,
+                reward_gold: gold,
+                reward_experience: exp,
+            }),
+        }).then(r => r.json());
+
+        if (data.success) {
+            closePostRequestModal();
+            document.getElementById('pr-title').value = '';
+            document.getElementById('pr-description').value = '';
+            await loadRequests();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error posting request: ' + error);
+    }
+}
+
+async function deleteRequest(requestId) {
+    if (!confirm('Delete this request? This cannot be undone.')) return;
+
+    const userId = getCurrentUserId();
+    try {
+        const data = await fetch(`/api/requests/${requestId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId }),
+        }).then(r => r.json());
+
+        if (data.success) {
+            await loadRequests();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error deleting request: ' + error);
+    }
+}
+
 // --- Background music ---
 
 function initMusic() {
@@ -412,6 +508,7 @@ function initMusic() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initMusic();
+    loadSystemGuild();
     updateUserBar();
     loadRequests();
     loadMyRequests();
