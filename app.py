@@ -171,7 +171,7 @@ def get_system_guild():
 @app.route('/api/requests', methods=['POST'])
 def post_request():
     """Post a new request"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     guild_id = data.get('guild_id', system_guild_id)
     result = api.post_request(guild_id, data)
     if result.get('success') and data.get('user_id'):
@@ -184,7 +184,7 @@ def post_request():
 @app.route('/api/requests/<request_id>', methods=['DELETE'])
 def delete_request(request_id):
     """Delete a request (only by the user who posted it)"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
     return jsonify(api.delete_request(request_id, user_id))
 
@@ -192,31 +192,37 @@ def delete_request(request_id):
 @app.route('/api/requests/<request_id>/accept', methods=['POST'])
 def accept_request(request_id):
     """Accept a request"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "error": "Not logged in"})
     return jsonify(api.accept_request(user_id, request_id))
 
 
 @app.route('/api/requests/<request_id>/decline', methods=['POST'])
 def decline_request(request_id):
     """Decline a request"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "error": "Not logged in"})
     return jsonify(api.decline_request(user_id, request_id))
 
 
 @app.route('/api/requests/<request_id>/complete', methods=['POST'])
 def complete_request(request_id):
     """Complete a request"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "error": "Not logged in"})
     return jsonify(api.complete_request(user_id, request_id))
 
 
 @app.route('/api/users/login', methods=['POST'])
 def login_user():
     """Log in by username"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     user = board.get_user_by_username(username)
     if user:
@@ -227,8 +233,10 @@ def login_user():
 @app.route('/api/users/register', methods=['POST'])
 def register_user():
     """Register a new user"""
-    data = request.get_json()
-    username = data.get('username')
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    if not username:
+        return jsonify({"success": False, "error": "Username is required"})
     return jsonify(api.register_user(username))
 
 

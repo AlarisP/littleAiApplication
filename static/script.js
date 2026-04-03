@@ -14,10 +14,10 @@ function getCurrentUserId() {
     return localStorage.getItem('guildUserId');
 }
 
-function setCurrentUserId(id) {
+async function setCurrentUserId(id) {
     localStorage.setItem('guildUserId', id);
     updateUserBar();
-    loadRequests();
+    await loadRequests();
     loadMyRequests();
 }
 
@@ -43,8 +43,10 @@ function updateUserBar() {
                         <button onclick="clearCurrentUser()" class="btn-logout">Log Out</button>
                     `;
                 } else {
+                    // Stale ID (server restarted) — clear it and refresh board state
                     localStorage.removeItem('guildUserId');
                     bar.innerHTML = '<button onclick="showLoginModal()" class="btn btn-primary">Join / Log In</button>';
+                    loadRequests();
                 }
             });
     } else {
@@ -54,7 +56,10 @@ function updateUserBar() {
 
 // --- Login / Register modal ---
 
-function showLoginModal() {
+let _pendingAction = null;
+
+function showLoginModal(afterLogin) {
+    _pendingAction = afterLogin || null;
     document.getElementById('login-modal').style.display = 'flex';
     setTimeout(() => document.getElementById('login-username').focus(), 50);
 }
@@ -87,7 +92,13 @@ async function submitLogin() {
 
         if (data.success) {
             closeLoginModal();
-            setCurrentUserId(data.user_id);
+            await setCurrentUserId(data.user_id);
+            // Execute any pending action (e.g. accept a request they clicked before logging in)
+            if (_pendingAction) {
+                const action = _pendingAction;
+                _pendingAction = null;
+                action();
+            }
         } else {
             alert('Could not join: ' + data.error);
         }
@@ -261,7 +272,7 @@ function renderMyList(containerId, requests, type) {
 async function acceptRequest(requestId) {
     const userId = getCurrentUserId();
     if (!userId) {
-        showLoginModal();
+        showLoginModal(() => acceptRequest(requestId));
         return;
     }
 
@@ -287,7 +298,7 @@ async function acceptRequest(requestId) {
 async function declineRequest(requestId) {
     const userId = getCurrentUserId();
     if (!userId) {
-        showLoginModal();
+        showLoginModal(() => declineRequest(requestId));
         return;
     }
 
